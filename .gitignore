@@ -1,0 +1,47 @@
+# Dépendances
+node_modules/
+.pnp/
+.pnp.js
+
+# Fichiers de build
+dist/
+build/
+out/
+.next/
+.nuxt/
+.cache/
+
+# Fichiers d'environnement
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Fichiers de logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Fichiers temporaires
+temp/
+tmp/
+.DS_Store
+Thumbs.db
+
+# Fichiers de couverture de test
+coverage/
+
+# Fichiers IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.project
+.classpath
+.settings/
+
+# Fichiers spécifiques au projet
+backend/temp/
