@@ -23,21 +23,45 @@ function App() {
     setSpeakers(e.target.value);
   };
 
-  const generateScript = (topic: string, speakers: string): string => {
-    // Format pour le backend
-    let speakerPrefix = '';
+  const generateScript = (topic: string, speakers: string, language: string): string => {
+    // Déterminer les préfixes de locuteurs en fonction du type d'interlocuteurs
+    let speaker1 = 'Speaker R';
+    let speaker2 = 'Speaker S';
     
-    if (speakers === 'Homme & Homme') {
-      speakerPrefix = 'Speaker R: ';
-    } else if (speakers === 'Femme & Femme') {
-      speakerPrefix = 'Speaker S: ';
-    } else {
-      // Homme & Femme - alternance
-      speakerPrefix = 'Speaker R: ';
-    }
-    
-    return `${speakerPrefix}Bienvenue à ce podcast sur ${topic}. Aujourd'hui nous allons discuter de ce sujet passionnant.
-Speaker S: Oui, c'est un sujet très intéressant. Commençons par explorer les différents aspects.`;
+    // Structure complète du podcast
+    return `${speaker1}: Bonjour à tous et bienvenue dans ce nouvel épisode de notre podcast. Aujourd'hui, nous allons parler de ${topic}, un sujet fascinant qui mérite d'être exploré en profondeur.
+
+${speaker2}: Tout à fait ! Ce sujet est particulièrement d'actualité et suscite beaucoup d'intérêt. Nous allons vous présenter les différents aspects et enjeux liés à ${topic}.
+
+${speaker1}: Pour commencer, mettons en contexte ce sujet. ${topic} est un domaine qui touche de nombreux aspects de notre société moderne.
+
+${speaker2}: Exactement. Et pour mieux comprendre, posons-nous quelques questions essentielles. Tout d'abord, qu'entend-on exactement par ${topic} ? Quelles sont ses caractéristiques principales ?
+
+${speaker1}: ${topic} peut être défini comme un ensemble de concepts et pratiques qui transforment notre façon de voir et d'interagir avec le monde. Les origines remontent à plusieurs années, mais c'est récemment que ce sujet a pris une ampleur considérable.
+
+${speaker2}: Si nous analysons plus en profondeur, quels sont les impacts de ${topic} sur notre quotidien et sur les différents secteurs d'activité ?
+
+${speaker1}: Excellente question ! ${topic} influence de nombreux domaines comme l'économie, la technologie, et même nos interactions sociales. Par exemple, nous observons des changements significatifs dans la manière dont les entreprises abordent leurs stratégies.
+
+${speaker2}: Et si nous nous projetons dans l'avenir, comment voyez-vous l'évolution de ${topic} dans les cinq prochaines années ? Quelles tendances émergentes pouvons-nous anticiper ?
+
+${speaker1}: Les experts prévoient une accélération des innovations liées à ${topic}. Nous pourrions voir émerger de nouvelles applications et des usages que nous n'imaginons pas encore aujourd'hui.
+
+${speaker2}: Abordons maintenant un aspect crucial : les questions éthiques et les défis liés à ${topic}. Quels sont les risques potentiels et comment pouvons-nous les atténuer ?
+
+${speaker1}: C'est un point essentiel. Tout progrès s'accompagne de responsabilités. Nous devons être vigilants concernant les questions de confidentialité, d'équité et d'accessibilité liées à ${topic}.
+
+${speaker2}: Pour illustrer concrètement, prenons un exemple de mise en application réussie de ${topic} dans un contexte réel.
+
+${speaker1}: Une étude de cas intéressante est celle de [exemple fictif adapté au sujet]. Cette initiative a démontré comment ${topic} peut être utilisé de manière innovante et responsable.
+
+${speaker2}: Pour conclure cet épisode, récapitulons les points clés que nous avons abordés sur ${topic}.
+
+${speaker1}: Nous avons exploré la définition et le contexte de ${topic}, analysé ses impacts sur différents secteurs, anticipé les évolutions futures, et discuté des enjeux éthiques. 
+
+${speaker2}: Nous espérons que cette discussion vous aura éclairés et donnés envie d'aller plus loin dans l'exploration de ${topic}. N'hésitez pas à partager vos réflexions ou vos questions.
+
+${speaker1}: Merci de nous avoir écoutés, et nous vous donnons rendez-vous très bientôt pour un nouvel épisode tout aussi passionnant !`;
   };
 
   const handleGeneratePodcast = async () => {
@@ -52,8 +76,8 @@ Speaker S: Oui, c'est un sujet très intéressant. Commençons par explorer les 
     setShowTranscript(false);
 
     try {
-      // Générer un script basé sur le sujet et les interlocuteurs
-      const generatedScript = generateScript(topic, speakers);
+      // Générer un script basé sur le sujet, les interlocuteurs et la langue
+      const generatedScript = generateScript(topic, speakers, language);
       setTranscript(generatedScript);
 
       // Envoyer au backend pour synthèse vocale
