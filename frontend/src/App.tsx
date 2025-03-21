@@ -10,6 +10,9 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [showTranscript, setShowTranscript] = useState<boolean>(false);
   const [transcript, setTranscript] = useState<string>('');
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [transcriptionResult, setTranscriptionResult] = useState<string>('');
+  const [transcribing, setTranscribing] = useState<boolean>(false);
 
   const handleTopicChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setTopic(e.target.value);
@@ -86,7 +89,11 @@ ${speaker1}: Merci de nous avoir écoutés, et nous vous donnons rendez-vous tr�
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ script: generatedScript }),
+        body: JSON.stringify({ 
+          script: generatedScript,
+          speakerType: speakers,
+          language: language
+        }),
       });
 
       if (!response.ok) {
@@ -119,6 +126,45 @@ ${speaker1}: Merci de nous avoir écoutés, et nous vous donnons rendez-vous tr�
     setShowTranscript(!showTranscript);
   };
 
+  const handleTranscribe = async () => {
+    if (!audioFile) {
+      setError('Veuillez sélectionner un fichier audio à transcrire');
+      return;
+    }
+
+    setTranscribing(true);
+    setError(null);
+    setTranscriptionResult('');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', audioFile);
+
+      const response = await fetch('/api/tts/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Échec de la transcription audio');
+      }
+
+      const data = await response.json();
+      setTranscriptionResult(data.transcription);
+      
+      // Optionnel : utiliser la transcription comme script pour le podcast
+      if (data.transcription) {
+        setTranscript(data.transcription);
+        setShowTranscript(true);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Une erreur inconnue est survenue');
+    } finally {
+      setTranscribing(false);
+    }
+  };
+
   return (
     <div className="app-container">
       <header className="app-header">
@@ -134,6 +180,45 @@ ${speaker1}: Merci de nous avoir écoutés, et nous vous donnons rendez-vous tr�
 
       <main className="main-content">
         <h2 className="main-title">Générez des podcasts interactifs<br />avec notre IA conversationnelle</h2>
+        
+        <section className="transcription-section">
+          <h3 className="section-title">Transcription Audio avec GPT-4o Mini Audio</h3>
+          
+          <div className="transcription-form">
+            <div className="form-group">
+              <label htmlFor="audio-file">Fichier Audio</label>
+              <input
+                type="file"
+                id="audio-file"
+                accept="audio/*"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    setAudioFile(e.target.files[0]);
+                    setError(null);
+                  }
+                }}
+                className="file-input"
+              />
+              <small className="file-help">Formats supportés: MP3, WAV, M4A, etc.</small>
+            </div>
+            
+            <button 
+              className="generate-button" 
+              onClick={handleTranscribe}
+              disabled={transcribing || !audioFile}
+            >
+              <span className="icon">🎤</span> {transcribing ? 'Transcription en cours...' : 'Transcrire l\'Audio'}
+            </button>
+            
+            {transcriptionResult && (
+              <div className="transcription-result">
+                <h4>Résultat de la Transcription</h4>
+                <pre className="transcription-text">{transcriptionResult}</pre>
+                <p className="transcription-info">La transcription a été automatiquement ajoutée comme script de podcast.</p>
+              </div>
+            )}
+          </div>
+        </section>
         
         <section className="podcast-creator">
           <h3 className="section-title">Expérience concepteur</h3>

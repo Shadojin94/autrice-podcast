@@ -54,19 +54,111 @@ export class TtsService {
   }
 
   /**
+   * Determine voice based on speaker ID and speaker type
+   * 
+   * Voix disponibles dans gpt-4o-mini-tts:
+   * - alloy: Voix neutre et équilibrée
+   * - echo: Voix masculine profonde et résonnante
+   * - fable: Voix chaleureuse et narrative
+   * - onyx: Voix masculine grave et autoritaire
+   * - nova: Voix féminine claire et professionnelle
+   * - shimmer: Voix féminine légère et brillante
+   * - ash: Voix masculine jeune et dynamique
+   * - coral: Voix féminine douce et mélodieuse
+   * - sage: Voix féminine mature et posée
+   * - ballad: Voix expressive et mélodique
+   */
+  private getVoiceForSpeaker(
+    speakerId: string, 
+    speakerType: string = 'default'
+  ): 'alloy' | 'nova' | 'echo' | 'onyx' | 'shimmer' | 'ash' | 'coral' | 'fable' | 'sage' | 'ballad' {
+    // Default mapping if no speaker type is specified
+    if (speakerType === 'default') {
+      return speakerId === 'R' ? 'alloy' : 'nova';
+    }
+
+    // Map speaker IDs to voices based on speaker type
+    const voiceMap = {
+      'homme-homme': {
+        // Deux voix masculines distinctes
+        'R': 'onyx' as const,  // Voix grave et autoritaire
+        'S': 'echo' as const,  // Voix profonde et résonnante
+      },
+      'homme-femme': {
+        // Une voix masculine et une voix féminine
+        'R': 'ash' as const,   // Voix masculine jeune et dynamique
+        'S': 'shimmer' as const, // Voix féminine légère et brillante
+      },
+      'femme-femme': {
+        // Deux voix féminines distinctes
+        'R': 'nova' as const,  // Voix féminine claire et professionnelle
+        'S': 'coral' as const, // Voix féminine douce et mélodieuse
+      }
+    };
+
+    // Return the appropriate voice or default to alloy/nova if not found
+    if (speakerType in voiceMap && speakerId in voiceMap[speakerType as keyof typeof voiceMap]) {
+      return voiceMap[speakerType as keyof typeof voiceMap][speakerId as 'R' | 'S'];
+    }
+    
+    // Default fallback avec des voix fixes
+    if (speakerId === 'R') {
+      // Pour le premier intervenant (R)
+      return 'onyx'; // Voix masculine grave et autoritaire
+    } else {
+      // Pour le second intervenant (S)
+      return 'nova'; // Voix féminine claire et professionnelle
+    }
+  }
+
+  /**
    * Generate speech for a single speaker line
    */
-  private async generateSpeech(text: string, speakerId: string): Promise<Buffer> {
-    // Choose voice based on speaker ID
-    // We'll use different voices for different speakers
-    const voice = speakerId === 'R' ? 'alloy' : 'nova';
+  private async generateSpeech(text: string, speakerId: string, speakerType: string = 'default'): Promise<Buffer> {
+    // Choose voice based on speaker ID and type
+    const voice = this.getVoiceForSpeaker(speakerId, speakerType);
+    
+    // Instructions de base pour la voix selon le type d'intervenant
+    let baseInstructions = "";
+    
+    if (speakerId === 'R') {
+      // Premier intervenant (R) - Plus dynamique et énergique
+      baseInstructions = "Personality/affect: Un animateur radio charismatique et plein d'énergie\n\n" +
+        "Voice: Enthousiaste et dynamique, avec une qualité motivante et engageante\n\n" +
+        "Tone: Enjoué et expressif, avec des variations de hauteur pour maintenir l'intérêt\n\n" +
+        "Intonation: Accentue certains mots clés pour l'emphase, utilise des pauses stratégiques\n\n" +
+        "Speed: Parle à un rythme modérément rapide mais clair, accélère sur les moments d'excitation\n\n" +
+        "Emotional range: Exprime clairement l'enthousiasme, l'humour et parfois l'ironie\n\n" +
+        "Features: Utilise des expressions idiomatiques, des métaphores et des références culturelles";
+    } else {
+      // Second intervenant (S) - Plus posé et réfléchi
+      baseInstructions = "Personality/affect: Un expert ou commentateur avec une touche d'ironie\n\n" +
+        "Voice: Posée et assurée, avec une qualité légèrement sarcastique\n\n" +
+        "Tone: Réfléchi mais incisif, avec des pointes d'humour sec\n\n" +
+        "Intonation: Utilise des inflexions subtiles pour souligner les contradictions ou l'ironie\n\n" +
+        "Speed: Parle à un rythme modéré, ralentit pour les points importants\n\n" +
+        "Emotional range: Alterne entre sérieux apparent et humour pince-sans-rire\n\n" +
+        "Features: Emploie des tournures élégantes et des remarques spirituelles";
+    }
+    
+    // Instructions supplémentaires pour le style des intervenants
+    const speakerStyleInstructions = "Les intervenants doivent avoir de l'humour, du sarcasme, être insolents et pleins d'esprit. " +
+      "Ils doivent sembler naturels et conversationnels, comme s'ils improvisaient plutôt que de lire un texte. " +
+      "Ils peuvent occasionnellement rire légèrement ou réagir aux propos de l'autre intervenant. " +
+      "Le ton doit être décontracté mais intelligent, avec des variations d'intonation pour éviter la monotonie.";
+    
+    // Combiner les instructions
+    const instructions = `${baseInstructions}\n\n${speakerStyleInstructions}`;
     
     try {
+      // Utiliser le modèle gpt-4o-mini-tts avec instructions personnalisées
       const response = await this.openai.audio.speech.create({
-        model: 'tts-1',
+        model: 'gpt-4o-mini-tts',
         voice: voice,
         input: text,
-      });
+        // @ts-ignore - Le paramètre 'instructions' est supporté par le modèle gpt-4o-mini-tts mais pas par les types TypeScript
+        instructions: instructions,
+      } as any);
 
       // Convert the response to a buffer
       const buffer = Buffer.from(await response.arrayBuffer());
@@ -121,7 +213,7 @@ export class TtsService {
   /**
    * Synthesize speech from the provided script
    */
-  async synthesizeSpeech(script: string): Promise<Buffer> {
+  async synthesizeSpeech(script: string, speakerType: string = 'default'): Promise<Buffer> {
     // Parse the script to extract speakers and their lines
     const speakers = this.parseScript(script);
 
@@ -135,7 +227,7 @@ export class TtsService {
       // Generate speech for each speaker line
       for (let i = 0; i < speakers.length; i++) {
         const speaker = speakers[i];
-        const audioBuffer = await this.generateSpeech(speaker.text, speaker.name);
+        const audioBuffer = await this.generateSpeech(speaker.text, speaker.name, speakerType);
         
         // Save to temporary file
         const tempFilePath = path.join(this.tempDir, `speaker_${speaker.name}_${i}_${crypto.randomBytes(4).toString('hex')}.mp3`);
